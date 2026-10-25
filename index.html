@@ -1,15 +1,154 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>GitHub 포트폴리오</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>활동 참여 기록</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 30px;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px #0001;
+    }
+    h1 { color: #253858; }
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 25px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+    th { background: #eef2ff; }
+  </style>
 </head>
 <body>
-  <h1>개발 포트폴리오</h1>
-  <p>Doosan Rokey</p>
+  <div class="container">
+    <h1>활동 참여 기록</h1>
 
-  <h2>프로젝트</h2>
-  <ul>
-    <li>Github 기초 실습</li>
-  </ul>
+    <label for="date">날짜</label>
+    <input type="date" id="date">
+
+    <label for="people">참여 인원</label>
+    <input type="number" id="people" min="1"
+           placeholder="예: 5">
+
+    <label for="content">활동 내용</label>
+    <textarea id="content" rows="4"
+              placeholder="오늘의 활동 내용을 입력하세요"></textarea>
+
+    <button onclick="addRecord()">기록 추가</button>
+
+    <h2>활동 기록 목록</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>참여 인원</th>
+          <th>활동 내용</th>
+        </tr>
+      </thead>
+      <tbody id="records"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const dateInput = document.getElementById("date");
+
+    function localDate() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      return new Date(now - offset)
+        .toISOString().slice(0, 10);
+    }
+
+    dateInput.value = localDate();
+
+    const records = JSON.parse(
+      localStorage.getItem("activityRecords") || "[]"
+    );
+
+    function renderRecords() {
+      const tbody = document.getElementById("records");
+      tbody.replaceChildren();
+
+      records.forEach(record => {
+        const row = document.createElement("tr");
+
+        [record.date, record.people, record.content]
+          .forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+          });
+
+        tbody.appendChild(row);
+      });
+    }
+
+    function addRecord() {
+      const date = dateInput.value;
+      const people = Number(
+        document.getElementById("people").value
+      );
+      const content = document.getElementById("content")
+        .value.trim();
+
+      if (!date || !Number.isInteger(people) ||
+          people < 1 || !content) {
+        alert("날짜, 참여 인원, 활동 내용을 입력하세요.");
+        return;
+      }
+
+      records.push({ date, people, content });
+
+      localStorage.setItem(
+        "activityRecords",
+        JSON.stringify(records)
+      );
+
+      renderRecords();
+      document.getElementById("people").value = "";
+      document.getElementById("content").value = "";
+    }
+
+    renderRecords();
+  </script>
 </body>
+</html>
