@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>활동 참여 기록</title>
+  <title>스터디 활동 기록</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,20 +12,31 @@
       margin: 0;
       padding: 30px;
     }
+
     .container {
-      max-width: 750px;
+      max-width: 850px;
       margin: auto;
       background: white;
       padding: 30px;
       border-radius: 12px;
       box-shadow: 0 4px 15px #0001;
     }
-    h1 { color: #253858; }
+
+    h1 {
+      color: #253858;
+    }
+
+    h2 {
+      margin-top: 35px;
+      color: #253858;
+    }
+
     label {
       display: block;
       margin-top: 18px;
       font-weight: bold;
     }
+
     input, textarea {
       width: 100%;
       box-sizing: border-box;
@@ -35,6 +46,7 @@
       border-radius: 6px;
       font: inherit;
     }
+
     button {
       background: #2563eb;
       color: white;
@@ -44,111 +56,372 @@
       margin-top: 20px;
       cursor: pointer;
     }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 25px;
     }
+
     th, td {
       border: 1px solid #ddd;
       padding: 12px;
       text-align: left;
       white-space: pre-wrap;
     }
-    th { background: #eef2ff; }
+
+    th {
+      background: #eef2ff;
+    }
+
+    .notice {
+      margin-top: 12px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #2563eb;
+    }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>활동 참여 기록</h1>
 
-    <label for="date">날짜</label>
-    <input type="date" id="date">
+<div class="container">
 
-    <label for="people">참여 인원</label>
-    <input type="number" id="people" min="1"
-           placeholder="예: 5">
+  <h1>📚 스터디 활동 기록</h1>
 
-    <label for="content">활동 내용</label>
-    <textarea id="content" rows="4"
-              placeholder="오늘의 활동 내용을 입력하세요"></textarea>
+  <p>스터디 참여 현황과 활동 내용을 관리하는 페이지입니다.</p>
 
-    <button onclick="addRecord()">기록 추가</button>
+  <!-- 날짜 -->
+  <label for="date">활동 날짜</label>
+  <input type="date" id="date">
 
-    <h2>활동 기록 목록</h2>
+  <!-- 참여 인원 -->
+  <label for="people">참여 인원</label>
+  <input
+    type="number"
+    id="people"
+    min="1"
+    placeholder="예: 5"
+  >
+
+  <!-- 활동 내용 -->
+  <label for="content">활동 내용</label>
+  <textarea
+    id="content"
+    rows="5"
+    placeholder="스터디 활동 내용을 입력하세요"
+  ></textarea>
+
+  <!-- 보고서 첨부 -->
+  <h2>📎 스터디 보고서</h2>
+
+  <label for="reportFile">보고서 파일 선택</label>
+  <input
+    type="file"
+    id="reportFile"
+    accept=".pdf,.doc,.docx,.ppt,.pptx"
+  >
+
+  <p class="notice">
+    선택한 파일은 현재 브라우저에서만 임시로 보관됩니다.
+    페이지를 새로고침하면 파일 선택 정보가 사라집니다.
+  </p>
+
+  <!-- 보고서 공유 링크 -->
+  <label for="reportUrl">보고서 공유 URL</label>
+  <input
+    type="url"
+    id="reportUrl"
+    placeholder="https://github.com/..."
+  >
+
+  <p class="notice">
+    GitHub 저장소에 보고서를 업로드한 후
+    파일 주소를 입력하면 다른 사용자도 보고서를 열람할 수 있습니다.
+  </p>
+
+  <!-- 기록 추가 -->
+  <button type="button" onclick="addRecord()">
+    기록 추가
+  </button>
+
+  <!-- 기록 목록 -->
+  <h2>📋 스터디 활동 기록 목록</h2>
+
+  <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>날짜</th>
           <th>참여 인원</th>
           <th>활동 내용</th>
+          <th>보고서</th>
         </tr>
       </thead>
+
       <tbody id="records"></tbody>
     </table>
   </div>
 
-  <script>
-    const dateInput = document.getElementById("date");
+  <p class="notice">
+    활동 기록은 현재 브라우저의 Local Storage에 저장됩니다.
+    다른 브라우저나 기기에는 자동으로 공유되지 않습니다.
+  </p>
 
-    function localDate() {
-      const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000;
-      return new Date(now - offset)
-        .toISOString().slice(0, 10);
-    }
+</div>
 
-    dateInput.value = localDate();
+<script>
 
-    const records = JSON.parse(
-      localStorage.getItem("activityRecords") || "[]"
+  // ====================================
+  // 1. 오늘 날짜 자동 설정
+  // ====================================
+
+  const dateInput = document.getElementById("date");
+
+  function localDate() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+
+    return new Date(now - offset)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  dateInput.value = localDate();
+
+
+  // ====================================
+  // 2. 기존 활동 기록 불러오기
+  // ====================================
+
+  // 기존 저장 키를 그대로 유지
+  const STORAGE_KEY = "activityRecords";
+
+  let records = [];
+
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || "[]"
     );
 
-    function renderRecords() {
-      const tbody = document.getElementById("records");
-      tbody.replaceChildren();
+    records = Array.isArray(saved) ? saved : [];
 
-      records.forEach(record => {
-        const row = document.createElement("tr");
+  } catch (error) {
+    console.error("기존 기록 불러오기 실패:", error);
+    alert("기존 기록을 읽지 못했습니다. 저장 데이터를 확인하세요.");
+  }
 
-        [record.date, record.people, record.content]
-          .forEach(value => {
-            const cell = document.createElement("td");
-            cell.textContent = value;
-            row.appendChild(cell);
-          });
 
-        tbody.appendChild(row);
-      });
-    }
+  // ====================================
+  // 3. 활동 기록 화면 출력
+  // ====================================
 
-    function addRecord() {
-      const date = dateInput.value;
-      const people = Number(
-        document.getElementById("people").value
-      );
-      const content = document.getElementById("content")
-        .value.trim();
+  function renderRecords() {
 
-      if (!date || !Number.isInteger(people) ||
-          people < 1 || !content) {
-        alert("날짜, 참여 인원, 활동 내용을 입력하세요.");
-        return;
+    const tbody = document.getElementById("records");
+
+    tbody.replaceChildren();
+
+    records.forEach(record => {
+
+      const row = document.createElement("tr");
+
+      // 날짜
+      const dateCell = document.createElement("td");
+      dateCell.textContent = record.date ?? "";
+      row.appendChild(dateCell);
+
+      // 참여 인원
+      const peopleCell = document.createElement("td");
+      peopleCell.textContent = record.people ?? "";
+      row.appendChild(peopleCell);
+
+      // 활동 내용
+      const contentCell = document.createElement("td");
+      contentCell.textContent = record.content ?? "";
+      row.appendChild(contentCell);
+
+      // 보고서
+      const reportCell = document.createElement("td");
+
+      if (record.reportUrl) {
+
+        try {
+          const url = new URL(record.reportUrl);
+
+          if (
+            url.protocol === "https:" ||
+            url.protocol === "http:"
+          ) {
+            const link = document.createElement("a");
+
+            link.href = url.href;
+            link.textContent =
+              record.reportName || "보고서 보기";
+
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
+            reportCell.appendChild(link);
+          }
+        } catch (error) {
+          reportCell.textContent = "유효하지 않은 링크";
+        }
+
+      } else if (record.reportName) {
+
+        // 이전에 선택한 파일명만 표시
+        reportCell.textContent =
+          record.reportName + " (공유 링크 없음)";
+
+      } else {
+
+        reportCell.textContent = "-";
+
       }
 
-      records.push({ date, people, content });
+      row.appendChild(reportCell);
+
+      tbody.appendChild(row);
+
+    });
+  }
+
+
+  // ====================================
+  // 4. 새로운 활동 기록 추가
+  // ====================================
+
+  function addRecord() {
+
+    const date = dateInput.value;
+
+    const peopleInput =
+      document.getElementById("people");
+
+    const people = Number(peopleInput.value);
+
+    const contentInput =
+      document.getElementById("content");
+
+    const content = contentInput.value.trim();
+
+    const reportFile =
+      document.getElementById("reportFile").files[0];
+
+    const reportUrlInput =
+      document.getElementById("reportUrl");
+
+    const reportUrl = reportUrlInput.value.trim();
+
+
+    // 필수 항목 검사
+    if (
+      !date ||
+      peopleInput.value === "" ||
+      !Number.isInteger(people) ||
+      people < 1 ||
+      !content
+    ) {
+      alert("날짜, 참여 인원, 활동 내용을 입력하세요.");
+      return;
+    }
+
+
+    // URL 유효성 검사
+    if (reportUrl) {
+
+      try {
+        const url = new URL(reportUrl);
+
+        if (
+          url.protocol !== "https:" &&
+          url.protocol !== "http:"
+        ) {
+          throw new Error("지원하지 않는 URL");
+        }
+
+      } catch (error) {
+        alert("올바른 보고서 URL을 입력하세요.");
+        return;
+      }
+    }
+
+
+    // 새 활동 기록
+    const newRecord = {
+
+      date: date,
+
+      people: people,
+
+      content: content,
+
+      // 기존 데이터에 신규 항목만 추가
+      reportName: reportFile ? reportFile.name : "",
+
+      reportUrl: reportUrl
+
+    };
+
+
+    // 기록 추가
+    records.push(newRecord);
+
+
+    // Local Storage 저장
+    try {
 
       localStorage.setItem(
-        "activityRecords",
+        STORAGE_KEY,
         JSON.stringify(records)
       );
 
-      renderRecords();
-      document.getElementById("people").value = "";
-      document.getElementById("content").value = "";
+    } catch (error) {
+
+      records.pop();
+
+      alert("기록 저장에 실패했습니다.");
+      return;
     }
 
+
+    // 화면 업데이트
     renderRecords();
-  </script>
+
+
+    // 입력 초기화
+    peopleInput.value = "";
+
+    contentInput.value = "";
+
+    document.getElementById("reportFile").value = "";
+
+    reportUrlInput.value = "";
+
+    alert("스터디 활동 기록이 추가되었습니다.");
+  }
+
+
+  // ====================================
+  // 5. 기존 기록 표시
+  // ====================================
+
+  renderRecords();
+
+</script>
+
 </body>
 </html>
