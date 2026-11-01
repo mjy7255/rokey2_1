@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>스터디 활동 기록</title>
 
   <style>
@@ -31,20 +32,11 @@
       color: #253858;
     }
 
-    label {
-      display: block;
-      margin-top: 18px;
-      font-weight: bold;
-    }
-
-    input, textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      margin-top: 7px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font: inherit;
+    .notice {
+      margin-top: 12px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
     }
 
     button {
@@ -82,15 +74,14 @@
       background: #eef2ff;
     }
 
-    .notice {
-      margin-top: 12px;
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
     a {
       color: #2563eb;
+    }
+
+    .status {
+      margin-top: 15px;
+      color: #555;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -101,67 +92,31 @@
 
   <h1>📚 스터디 활동 기록</h1>
 
-  <p>스터디 참여 현황과 활동 내용을 관리하는 페이지입니다.</p>
-
-  <!-- 날짜 -->
-  <label for="date">활동 날짜</label>
-  <input type="date" id="date">
-
-  <!-- 참여 인원 -->
-  <label for="people">참여 인원</label>
-  <input
-    type="number"
-    id="people"
-    min="1"
-    placeholder="예: 5"
-  >
-
-  <!-- 활동 내용 -->
-  <label for="content">활동 내용</label>
-  <textarea
-    id="content"
-    rows="5"
-    placeholder="스터디 활동 내용을 입력하세요"
-  ></textarea>
-
-  <!-- 보고서 첨부 -->
-  <h2>📎 스터디 보고서</h2>
-
-  <label for="reportFile">보고서 파일 선택</label>
-  <input
-    type="file"
-    id="reportFile"
-    accept=".pdf,.doc,.docx,.ppt,.pptx"
-  >
-
-  <p class="notice">
-    선택한 파일은 현재 브라우저에서만 임시로 보관됩니다.
-    페이지를 새로고침하면 파일 선택 정보가 사라집니다.
+  <p>
+    스터디 참여 현황과 활동 내용을
+    공유하는 페이지입니다.
   </p>
 
-  <!-- 보고서 공유 링크 -->
-  <label for="reportUrl">보고서 공유 URL</label>
-  <input
-    type="url"
-    id="reportUrl"
-    placeholder="https://github.com/..."
-  >
-
   <p class="notice">
-    GitHub 저장소에 보고서를 업로드한 후
-    파일 주소를 입력하면 다른 사용자도 보고서를 열람할 수 있습니다.
+    활동 기록은 GitHub 저장소에서 관리됩니다.
+    관리자가 내용을 수정하면 모든 사용자가
+    최신 기록을 확인할 수 있습니다.
   </p>
 
-  <!-- 기록 추가 -->
-  <button type="button" onclick="addRecord()">
-    기록 추가
+  <!-- 최신 기록 불러오기 -->
+  <button type="button" onclick="loadRecords()">
+    🔄 최신 기록 불러오기
   </button>
 
-  <!-- 기록 목록 -->
+  <p id="status" class="status"></p>
+
+  <!-- 활동 기록 목록 -->
   <h2>📋 스터디 활동 기록 목록</h2>
 
   <div class="table-wrap">
+
     <table>
+
       <thead>
         <tr>
           <th>날짜</th>
@@ -172,12 +127,14 @@
       </thead>
 
       <tbody id="records"></tbody>
+
     </table>
+
   </div>
 
   <p class="notice">
-    활동 기록은 현재 브라우저의 Local Storage에 저장됩니다.
-    다른 브라우저나 기기에는 자동으로 공유되지 않습니다.
+    보고서 파일은 GitHub 저장소의
+    Report 폴더에서 관리됩니다.
   </p>
 
 </div>
@@ -185,42 +142,70 @@
 <script>
 
   // ====================================
-  // 1. 오늘 날짜 자동 설정
+  // 1. GitHub 공유 데이터 경로
   // ====================================
 
-  const dateInput = document.getElementById("date");
-
-  function localDate() {
-    const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-
-    return new Date(now - offset)
-      .toISOString()
-      .slice(0, 10);
-  }
-
-  dateInput.value = localDate();
-
-
-  // ====================================
-  // 2. 기존 활동 기록 불러오기
-  // ====================================
-
-  // 기존 저장 키를 그대로 유지
-  const STORAGE_KEY = "activityRecords";
+  const DATA_URL = "./activities.json";
 
   let records = [];
 
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) || "[]"
-    );
 
-    records = Array.isArray(saved) ? saved : [];
+  // ====================================
+  // 2. GitHub 최신 기록 불러오기
+  // ====================================
 
-  } catch (error) {
-    console.error("기존 기록 불러오기 실패:", error);
-    alert("기존 기록을 읽지 못했습니다. 저장 데이터를 확인하세요.");
+  async function loadRecords() {
+
+    const status =
+      document.getElementById("status");
+
+    status.textContent = "기록을 불러오는 중입니다.";
+
+    try {
+
+      // 브라우저 캐시 방지
+      const url =
+        DATA_URL + "?t=" + Date.now();
+
+      const response = await fetch(url, {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "HTTP 오류: " + response.status
+        );
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "활동 기록 데이터 형식이 올바르지 않습니다."
+        );
+      }
+
+      records = data;
+
+      renderRecords();
+
+      status.textContent =
+        "최신 기록을 불러왔습니다. (" +
+        records.length +
+        "건)";
+
+    } catch (error) {
+
+      console.error(
+        "활동 기록 불러오기 실패:",
+        error
+      );
+
+      status.textContent =
+        "기록을 불러오지 못했습니다. " +
+        "activities.json 파일과 배포 상태를 확인하세요.";
+
+    }
   }
 
 
@@ -230,61 +215,116 @@
 
   function renderRecords() {
 
-    const tbody = document.getElementById("records");
+    const tbody =
+      document.getElementById("records");
 
     tbody.replaceChildren();
 
+    // 기록이 없는 경우
+    if (records.length === 0) {
+
+      const row =
+        document.createElement("tr");
+
+      const cell =
+        document.createElement("td");
+
+      cell.colSpan = 4;
+
+      cell.textContent =
+        "등록된 스터디 활동 기록이 없습니다.";
+
+      row.appendChild(cell);
+
+      tbody.appendChild(row);
+
+      return;
+    }
+
+
+    // 활동 기록 반복 출력
     records.forEach(record => {
 
-      const row = document.createElement("tr");
+      const row =
+        document.createElement("tr");
+
 
       // 날짜
-      const dateCell = document.createElement("td");
-      dateCell.textContent = record.date ?? "";
+      const dateCell =
+        document.createElement("td");
+
+      dateCell.textContent =
+        record.date ?? "";
+
       row.appendChild(dateCell);
 
+
       // 참여 인원
-      const peopleCell = document.createElement("td");
-      peopleCell.textContent = record.people ?? "";
+      const peopleCell =
+        document.createElement("td");
+
+      peopleCell.textContent =
+        record.people ?? "";
+
       row.appendChild(peopleCell);
 
+
       // 활동 내용
-      const contentCell = document.createElement("td");
-      contentCell.textContent = record.content ?? "";
+      const contentCell =
+        document.createElement("td");
+
+      contentCell.textContent =
+        record.content ?? "";
+
       row.appendChild(contentCell);
 
+
       // 보고서
-      const reportCell = document.createElement("td");
+      const reportCell =
+        document.createElement("td");
 
       if (record.reportUrl) {
 
         try {
-          const url = new URL(record.reportUrl);
+
+          const url = new URL(
+            record.reportUrl,
+            window.location.href
+          );
 
           if (
             url.protocol === "https:" ||
             url.protocol === "http:"
           ) {
-            const link = document.createElement("a");
+
+            const link =
+              document.createElement("a");
 
             link.href = url.href;
+
             link.textContent =
               record.reportName || "보고서 보기";
 
             link.target = "_blank";
-            link.rel = "noopener noreferrer";
+
+            link.rel =
+              "noopener noreferrer";
 
             reportCell.appendChild(link);
+
+          } else {
+
+            reportCell.textContent =
+              "지원하지 않는 링크";
+
           }
+
         } catch (error) {
-          reportCell.textContent = "유효하지 않은 링크";
+
+          reportCell.textContent =
+            "유효하지 않은 링크";
+
         }
-
-      } else if (record.reportName) {
-
-        // 이전에 선택한 파일명만 표시
-        reportCell.textContent =
-          record.reportName + " (공유 링크 없음)";
 
       } else {
 
@@ -301,125 +341,13 @@
 
 
   // ====================================
-  // 4. 새로운 활동 기록 추가
+  // 4. 페이지 접속 시 자동 불러오기
   // ====================================
 
-  function addRecord() {
-
-    const date = dateInput.value;
-
-    const peopleInput =
-      document.getElementById("people");
-
-    const people = Number(peopleInput.value);
-
-    const contentInput =
-      document.getElementById("content");
-
-    const content = contentInput.value.trim();
-
-    const reportFile =
-      document.getElementById("reportFile").files[0];
-
-    const reportUrlInput =
-      document.getElementById("reportUrl");
-
-    const reportUrl = reportUrlInput.value.trim();
-
-
-    // 필수 항목 검사
-    if (
-      !date ||
-      peopleInput.value === "" ||
-      !Number.isInteger(people) ||
-      people < 1 ||
-      !content
-    ) {
-      alert("날짜, 참여 인원, 활동 내용을 입력하세요.");
-      return;
-    }
-
-
-    // URL 유효성 검사
-    if (reportUrl) {
-
-      try {
-        const url = new URL(reportUrl);
-
-        if (
-          url.protocol !== "https:" &&
-          url.protocol !== "http:"
-        ) {
-          throw new Error("지원하지 않는 URL");
-        }
-
-      } catch (error) {
-        alert("올바른 보고서 URL을 입력하세요.");
-        return;
-      }
-    }
-
-
-    // 새 활동 기록
-    const newRecord = {
-
-      date: date,
-
-      people: people,
-
-      content: content,
-
-      // 기존 데이터에 신규 항목만 추가
-      reportName: reportFile ? reportFile.name : "",
-
-      reportUrl: reportUrl
-
-    };
-
-
-    // 기록 추가
-    records.push(newRecord);
-
-
-    // Local Storage 저장
-    try {
-
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(records)
-      );
-
-    } catch (error) {
-
-      records.pop();
-
-      alert("기록 저장에 실패했습니다.");
-      return;
-    }
-
-
-    // 화면 업데이트
-    renderRecords();
-
-
-    // 입력 초기화
-    peopleInput.value = "";
-
-    contentInput.value = "";
-
-    document.getElementById("reportFile").value = "";
-
-    reportUrlInput.value = "";
-
-    alert("스터디 활동 기록이 추가되었습니다.");
-  }
-
-
-  // ====================================
-  // 5. 기존 기록 표시
-  // ====================================
-
-  renderRecords();
+  document.addEventListener(
+    "DOMContentLoaded",
+    loadRecords
+  );
 
 </script>
 

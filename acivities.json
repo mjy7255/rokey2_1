@@ -1,0 +1,33 @@
+[
+  {
+    "date": "2026-10-25",
+    "people": 5,
+    "content": "깃허브 페이지 생성 및 공유"
+  },
+  {
+    "date": "2026-10-25",
+    "people": 5,
+    "content": "깃,깃허브 실습\nhttps://app.notion.com/p/Windows-3f09ba5c1aae807d9678e50a9c727162?source=copy_link"
+  },
+  {
+    "date": "2026-10-25",
+    "people": 5,
+    "content": "깃 깃허브 스터디보고서 업로드",
+    "reportName": "11기_2차-1조_스터디_261025.pdf",
+    "reportUrl": "https://drive.google.com/file/d/18--s-PA6NP9r0qwkUMkgC0J9e6_15Q-B/view?usp=sharing"
+  },
+  {
+    "date": "2026-10-25",
+    "people": 5,
+    "content": "Report 저장소 : 깃 깃허브 스터디보고서",
+    "reportName": "",
+    "reportUrl": "https://github.com/mjy7255/rokey2_1/blob/main/Report/11%EA%B8%B0_2%EC%B0%A8-1%EC%A1%B0_%EC%8A%A4%ED%84%B0%EB%94%94_261025.pdf"
+  },
+  {
+    "date": "2026-10-30",
+    "people": 3,
+    "content": "데이터 다루기 기초 :\n3. 판다스 기초\n4. 데이터 필터링 및 값 변경\n5. 데이터 가공 및 요약",
+    "reportName": "",
+    "reportUrl": "https://github.com/mjy7255/rokey2_1/blob/main/Report/11%EA%B8%B0_2%EC%B0%A8-1%EC%A1%B0_%EC%8A%A4%ED%84%B0%EB%94%94_261030.pdf"
+  }
+]
