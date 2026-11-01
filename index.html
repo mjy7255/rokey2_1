@@ -23,20 +23,28 @@
       box-shadow: 0 4px 15px #0001;
     }
 
-    h1 {
+    h1, h2 {
       color: #253858;
     }
 
     h2 {
       margin-top: 35px;
-      color: #253858;
     }
 
-    .notice {
-      margin-top: 12px;
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
     }
 
     button {
@@ -45,12 +53,26 @@
       border: none;
       padding: 12px 20px;
       border-radius: 6px;
-      margin-top: 20px;
+      margin-top: 12px;
+      margin-right: 8px;
       cursor: pointer;
     }
 
     button:hover {
       background: #1d4ed8;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .secondary {
+      background: #475569;
+    }
+
+    .secondary:hover {
+      background: #334155;
     }
 
     .table-wrap {
@@ -74,14 +96,21 @@
       background: #eef2ff;
     }
 
-    a {
-      color: #2563eb;
+    .notice {
+      margin-top: 12px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
     }
 
     .status {
       margin-top: 15px;
-      color: #555;
       font-size: 14px;
+      color: #253858;
+    }
+
+    a {
+      color: #2563eb;
     }
   </style>
 </head>
@@ -93,18 +122,75 @@
   <h1>📚 스터디 활동 기록</h1>
 
   <p>
-    스터디 참여 현황과 활동 내용을
-    공유하는 페이지입니다.
+    스터디 참여 현황과 활동 내용을 관리하는 페이지입니다.
   </p>
+
+  <!-- 활동 기록 등록 -->
+  <h2>✏️ 활동 기록 등록</h2>
+
+  <label for="date">활동 날짜</label>
+  <input type="date" id="date">
+
+  <label for="people">참여 인원</label>
+  <input
+    type="number"
+    id="people"
+    min="1"
+    placeholder="예: 5"
+  >
+
+  <label for="content">활동 내용</label>
+  <textarea
+    id="content"
+    rows="5"
+    placeholder="스터디 활동 내용을 입력하세요"
+  ></textarea>
+
+  <!-- 보고서 -->
+  <h2>📎 스터디 보고서</h2>
+
+  <label for="reportName">보고서 이름</label>
+  <input
+    type="text"
+    id="reportName"
+    placeholder="예: 11기_2차-1조_스터디.pdf"
+  >
+
+  <label for="reportUrl">보고서 공유 URL</label>
+  <input
+    type="text"
+    id="reportUrl"
+    placeholder="Report/study.pdf 또는 https://..."
+  >
 
   <p class="notice">
-    활동 기록은 GitHub 저장소에서 관리됩니다.
-    관리자가 내용을 수정하면 모든 사용자가
-    최신 기록을 확인할 수 있습니다.
+    보고서 파일은 GitHub 저장소의 Report 폴더에
+    별도로 업로드해야 합니다.
   </p>
 
-  <!-- 최신 기록 불러오기 -->
-  <button type="button" onclick="loadRecords()">
+  <button
+    type="button"
+    id="addButton"
+    onclick="addRecord()"
+    disabled
+  >
+    ➕ 기록 추가
+  </button>
+
+  <button
+    type="button"
+    id="downloadButton"
+    onclick="downloadJSON()"
+    disabled
+  >
+    💾 JSON 다운로드
+  </button>
+
+  <button
+    type="button"
+    class="secondary"
+    onclick="loadRecords()"
+  >
     🔄 최신 기록 불러오기
   </button>
 
@@ -114,9 +200,7 @@
   <h2>📋 스터디 활동 기록 목록</h2>
 
   <div class="table-wrap">
-
     <table>
-
       <thead>
         <tr>
           <th>날짜</th>
@@ -127,14 +211,13 @@
       </thead>
 
       <tbody id="records"></tbody>
-
     </table>
-
   </div>
 
   <p class="notice">
-    보고서 파일은 GitHub 저장소의
-    Report 폴더에서 관리됩니다.
+    새 기록은 우선 현재 브라우저에 임시 저장됩니다.
+    다른 사용자와 공유하려면 JSON 파일을 다운로드하여
+    GitHub 저장소에 반영해야 합니다.
   </p>
 
 </div>
@@ -142,16 +225,57 @@
 <script>
 
   // ====================================
-  // 1. GitHub 공유 데이터 경로
+  // 1. 기본 설정
   // ====================================
 
   const DATA_URL = "./activities.json";
 
+  // 임시 작업 내용 저장 키
+  const DRAFT_KEY = "studyRecordsDraftV1";
+
   let records = [];
+
+  let loaded = false;
 
 
   // ====================================
-  // 2. GitHub 최신 기록 불러오기
+  // 2. 오늘 날짜 자동 설정
+  // ====================================
+
+  function localDate() {
+
+    const now = new Date();
+
+    const offset =
+      now.getTimezoneOffset() * 60000;
+
+    return new Date(now - offset)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  document.getElementById("date").value =
+    localDate();
+
+
+  // ====================================
+  // 3. 입력 및 다운로드 버튼 제어
+  // ====================================
+
+  function setReady(ready) {
+
+    loaded = ready;
+
+    document.getElementById("addButton").disabled =
+      !ready;
+
+    document.getElementById("downloadButton").disabled =
+      !ready;
+  }
+
+
+  // ====================================
+  // 4. GitHub 기록 불러오기
   // ====================================
 
   async function loadRecords() {
@@ -159,58 +283,250 @@
     const status =
       document.getElementById("status");
 
-    status.textContent = "기록을 불러오는 중입니다.";
+    status.textContent =
+      "GitHub 활동 기록을 불러오는 중입니다.";
 
     try {
 
-      // 브라우저 캐시 방지
-      const url =
-        DATA_URL + "?t=" + Date.now();
+      const url = new URL(
+        DATA_URL,
+        window.location.href
+      );
+
+      url.searchParams.set("t", Date.now());
 
       const response = await fetch(url, {
         cache: "no-store"
       });
 
       if (!response.ok) {
+
         throw new Error(
-          "HTTP 오류: " + response.status
+          "HTTP " + response.status
         );
+
       }
 
       const data = await response.json();
 
       if (!Array.isArray(data)) {
+
         throw new Error(
-          "활동 기록 데이터 형식이 올바르지 않습니다."
+          "JSON 데이터는 배열이어야 합니다."
         );
+
       }
 
+      // 기존 GitHub 기록을 기준으로 설정
       records = data;
+
+      // 이전 임시 작업이 있으면 복구 여부 확인
+      const savedDraft =
+        localStorage.getItem(DRAFT_KEY);
+
+      if (savedDraft) {
+
+        try {
+
+          const draft = JSON.parse(savedDraft);
+
+          if (
+            Array.isArray(draft) &&
+            confirm(
+              "이전에 작성한 임시 기록이 있습니다.\n" +
+              "임시 기록을 복구하시겠습니까?\n\n" +
+              "취소하면 GitHub에 배포된 기록을 표시합니다."
+            )
+          ) {
+
+            records = draft;
+
+          } else {
+
+            localStorage.removeItem(DRAFT_KEY);
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "임시 기록 복구 실패:",
+            error
+          );
+
+        }
+      }
+
+      setReady(true);
 
       renderRecords();
 
       status.textContent =
-        "최신 기록을 불러왔습니다. (" +
+        "활동 기록 " +
         records.length +
-        "건)";
+        "건을 불러왔습니다.";
 
     } catch (error) {
 
-      console.error(
-        "활동 기록 불러오기 실패:",
-        error
-      );
+      console.error(error);
+
+      setReady(false);
 
       status.textContent =
-        "기록을 불러오지 못했습니다. " +
-        "activities.json 파일과 배포 상태를 확인하세요.";
+        "기록을 불러오지 못했습니다: " +
+        error.message +
+        ". activities.json 파일을 확인하세요.";
 
     }
   }
 
 
   // ====================================
-  // 3. 활동 기록 화면 출력
+  // 5. 활동 기록 추가
+  // ====================================
+
+  function addRecord() {
+
+    if (!loaded) {
+
+      alert(
+        "기존 기록을 먼저 불러와야 합니다."
+      );
+
+      return;
+    }
+
+    const date =
+      document.getElementById("date").value;
+
+    const peopleInput =
+      document.getElementById("people");
+
+    const people =
+      Number(peopleInput.value);
+
+    const content =
+      document.getElementById("content")
+        .value.trim();
+
+    const reportName =
+      document.getElementById("reportName")
+        .value.trim();
+
+    const reportUrl =
+      document.getElementById("reportUrl")
+        .value.trim();
+
+
+    // 필수 항목 확인
+    if (
+      !date ||
+      peopleInput.value === "" ||
+      !Number.isInteger(people) ||
+      people < 1 ||
+      !content
+    ) {
+
+      alert(
+        "날짜, 참여 인원, 활동 내용을 입력하세요."
+      );
+
+      return;
+    }
+
+
+    // 보고서 URL 확인
+    if (reportUrl) {
+
+      try {
+
+        const url = new URL(
+          reportUrl,
+          window.location.href
+        );
+
+        if (
+          url.protocol !== "https:" &&
+          url.protocol !== "http:"
+        ) {
+
+          throw new Error("잘못된 URL");
+
+        }
+
+      } catch (error) {
+
+        alert(
+          "올바른 보고서 URL 또는 상대 경로를 입력하세요."
+        );
+
+        return;
+      }
+    }
+
+
+    // 신규 기록 생성
+    const newRecord = {
+
+      date: date,
+
+      people: people,
+
+      content: content,
+
+      reportName: reportName,
+
+      reportUrl: reportUrl
+
+    };
+
+
+    // 기존 기록에 추가
+    records.push(newRecord);
+
+
+    // 브라우저 임시 저장
+    try {
+
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify(records)
+      );
+
+    } catch (error) {
+
+      records.pop();
+
+      alert(
+        "임시 저장에 실패했습니다."
+      );
+
+      return;
+    }
+
+
+    // 화면 갱신
+    renderRecords();
+
+
+    // 입력 초기화
+    peopleInput.value = "";
+
+    document.getElementById("content").value = "";
+
+    document.getElementById("reportName").value = "";
+
+    document.getElementById("reportUrl").value = "";
+
+    document.getElementById("status").textContent =
+      "새 기록이 추가되었습니다. " +
+      "JSON 다운로드 후 GitHub에 업로드하세요.";
+
+  }
+
+
+  // ====================================
+  // 6. 활동 기록 목록 표시
   // ====================================
 
   function renderRecords() {
@@ -220,7 +536,7 @@
 
     tbody.replaceChildren();
 
-    // 기록이 없는 경우
+
     if (records.length === 0) {
 
       const row =
@@ -232,7 +548,7 @@
       cell.colSpan = 4;
 
       cell.textContent =
-        "등록된 스터디 활동 기록이 없습니다.";
+        "등록된 활동 기록이 없습니다.";
 
       row.appendChild(cell);
 
@@ -242,7 +558,6 @@
     }
 
 
-    // 활동 기록 반복 출력
     records.forEach(record => {
 
       const row =
@@ -341,7 +656,61 @@
 
 
   // ====================================
-  // 4. 페이지 접속 시 자동 불러오기
+  // 7. JSON 파일 다운로드
+  // ====================================
+
+  function downloadJSON() {
+
+    if (!loaded) {
+
+      alert(
+        "기존 기록을 먼저 불러와야 합니다."
+      );
+
+      return;
+    }
+
+    const jsonData = JSON.stringify(
+      records,
+      null,
+      2
+    );
+
+    const blob = new Blob(
+      [jsonData],
+      {
+        type: "application/json;charset=utf-8"
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const a =
+      document.createElement("a");
+
+    a.href = url;
+
+    a.download = "activities.json";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    document.getElementById("status").textContent =
+      "activities.json 다운로드 완료. " +
+      "GitHub 저장소에 업로드하여 공유하세요.";
+  }
+
+
+  // ====================================
+  // 8. 페이지 접속 시 자동 실행
   // ====================================
 
   document.addEventListener(
