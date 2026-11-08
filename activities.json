@@ -30,11 +30,18 @@
     "reportName": "",
     "reportUrl": "https://github.com/mjy7255/rokey2_1/blob/main/Report/11%EA%B8%B0_2%EC%B0%A8-1%EC%A1%B0_%EC%8A%A4%ED%84%B0%EB%94%94_261030.pdf"
   },
-    {
+  {
     "date": "2026-11-01",
     "people": 3,
     "content": "데이터 다루기 기초 :\n1. NumPy기초\n2. Pandas",
     "reportName": "",
     "reportUrl": "https://github.com/mjy7255/rokey2_1/blob/main/Report/11%EA%B8%B0_2%EC%B0%A8-1%EC%A1%B0_%EC%8A%A4%ED%84%B0%EB%94%94_261101.pdf"
+  },
+  {
+    "date": "2026-11-08",
+    "people": 5,
+    "content": "[3주차] 데이터_분석_문제풀이",
+    "reportName": "",
+    "reportUrl": "https://github.com/mjy7255/rokey2_1/blob/main/Report/11%EA%B8%B0_2%EC%B0%A8-1%EC%A1%B0_%EC%8A%A4%ED%84%B0%EB%94%94_261108.pdf"
   }
 ]
